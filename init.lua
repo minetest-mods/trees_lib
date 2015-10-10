@@ -378,7 +378,6 @@ trees_lib.tree_abm_called = function( pos, node, force_grow )
 		-- TODO: determine xoff, yoff and zoff when registering the tree
 		--       (if yoff is not given, then use 0)
 		minetest.place_schematic(
-			pos,
 			{x = pos.x - how_to_grow.xoff,
 			 y = pos.y - how_to_grow.yoff,
 			 z = pos.z - how_to_grow.zoff},
@@ -390,6 +389,9 @@ trees_lib.tree_abm_called = function( pos, node, force_grow )
 
 	-- grow the tree using L-system
 	elseif( how_to_grow.use_lsystem and type(how_to_grow.use_lsystem)=="table") then
+		-- remove the sapling
+		minetest.set_node( pos, {name="air"});
+		-- spawn the l-system tree
 		minetest.spawn_tree(pos, how_to_grow.use_lsystem );
 	end
 end
@@ -398,14 +400,14 @@ end
 -----------------------------------------------------------------------------
 -- register a new tree
 -----------------------------------------------------------------------------
-trees_lib.register_tree = function( tree_name, mod_prefix, nodes, growing )
+trees_lib.register_tree = function( tree_name, mod_prefix, nodes, growing_methods, grows_on_node_type_list, can_grow_function, select_how_to_grow_function )
 	-- register tree trunk, wood, leaves and fruit (provided they are not defined yet)
 	local cid_list = trees_lib.register_tree_nodes_and_crafts( tree_name, mod_prefix, nodes );
 
 	-- a sapling will be needed for growing the tree
 	if(   not( nodes.sapling )
 	   or not( nodes.sapling.node_name )
-	   or not( growing )) then
+	   or not( growing_methods )) then
 		return;
 	end
 
@@ -426,7 +428,7 @@ trees_lib.register_tree = function( tree_name, mod_prefix, nodes, growing )
 
 		-- list of node names (can contain groups, i.e. "group:soil")
 		-- on which the sapling will grow
-		grows_on      = growing.grows_on,
+		grows_on      = grows_on_node_type_list,
 
 		-- are all the requirements met for growing at pos?
 		-- sapling will only grow if
@@ -434,19 +436,19 @@ trees_lib.register_tree = function( tree_name, mod_prefix, nodes, growing )
 		-- returns true
 		-- (usful for i.e. requiring water nearby, or other
 		-- more complex requirements)
-		can_grow      = growing.can_grow,
+		can_grow      = can_grow_function,
 
 		-- has to be either nil (for selecting a random way)
 		-- or return a specific growth function like the ones in
 		-- the list how_to_grow (see below) when called with
 		--      growing.select_how_to_grow( pos, node, growing.how_to_grow )
-		select_how_to_grow = growing.select_how_to_grow,
+		select_how_to_grow = select_how_to_grow_function,
 
 		-- list of all methods that can turn the sapling into a
 		-- tree; can be a function, a file name containing a schematic
 		-- or a table for L-system trees;
 		-- this table/list is REQUIRED
-		how_to_grow   = growing.how_to_grow,
+		how_to_grow   = growing_methods,
 	};
 
 	-- a new tree was registered - call all functions that want to be told about new trees
@@ -599,14 +601,66 @@ trees_lib.register_tree( "silly", "trees_lib",
 		tiles        = {"default_copper_lump.png^[colorize:#e3ff0070"},
 		food_points  = 2,
 	}},
-	{ how_to_grow  = {
-		{ use_function = trees_lib.generate_fruit_tree,
-		  xoff = 2, zoff = 2, yoff = 0, height = 6,
-		}
-	}}
-
+	-- the diffrent ways of how a tree can be grown
+	{
+		-- one of these methods will be choosen randomly
+		{
+			-- a function - like that used to create the trees/apple trees in mapgen v6
+			use_function = trees_lib.generate_fruit_tree,
+			-- How far will the tree reach in each direction? We need to load a
+			-- sufficiently large voxelmanip area.
+			xoff = 2, zoff = 2, yoff = 0, height = 12,
+		}, {
+			-- schematics can be used as well
+			use_schematic = minetest.get_modpath("default").."/schematics/acacia_tree_from_sapling.mts",
+			-- TODO: determine these values automaticly
+			xoff = 4, zoff = 4, yoff = 0, height = 10,
+			-- use a schematic with diffrent nodes
+			use_replacements = {
+				{"default:acacia_tree",  "trees_lib:silly_tree"},
+				{"default:acacia_leaves","trees_lib:silly_leaves"},
+			}
+		}, {
+			-- this is moretrees.birch_model1
+			use_lsystem = {
+				axiom="FFFFFdddccA/FFFFFFcA/FFFFFFcB",
+				rules_a="[&&&dddd^^ddddddd][&&&---dddd^^ddddddd][&&&+++dddd^^ddddddd][&&&++++++dddd^^ddddddd]",
+				rules_b="[&&&ddd^^ddddd][&&&---ddd^^ddddd][&&&+++ddd^^ddddd][&&&++++++ddd^^ddddd]",
+				rules_c="/",
+				rules_d="F",
+				trunk="trees_lib:silly_tree", --"moretrees:birch_trunk",
+				leaves="trees_lib:silly_leaves", --"moretrees:birch_leaves",
+				angle=30,
+				iterations=2,
+				random_level=0,
+				trunk_type="single",
+				thin_branches=true
+			}
+		},{
+			-- this is moretrees.birch_model2
+			use_lsystem = {
+				axiom="FFFdddccA/FFFFFccA/FFFFFccB",
+				rules_a="[&&&dFFF^^FFFdd][&&&---dFFF^^FFFdd][&&&+++dFFF^^FFFdd][&&&++++++dFFF^^FFFdd]",
+				rules_b="[&&&dFF^^FFFd][&&&---dFFF^^FFFd][&&&+++dFF^^FFFd][&&&++++++dFF^^FFFd]",
+				rules_c="/",
+				rules_d="F",
+				trunk="trees_lib:silly_tree", --"moretrees:birch_trunk",
+				leaves="trees_lib:silly_leaves", --"moretrees:birch_leaves",
+				angle=30,
+				iterations=2,
+				random_level=0,
+				trunk_type="single",
+				thin_branches=true
+			}
+		},
+	},
+	-- no grows_on_node_type_list - the tree grows everywhere
+	nil,
+	-- no limits as to where the tree can grow (no can_grow_function)
+	nil,
+	-- no select_how_to_grow_function - the tree uses the same method everywhere
+	nil
 	);
-
 
 
 --[[

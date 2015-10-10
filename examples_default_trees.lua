@@ -24,14 +24,16 @@ trees_lib.register_tree( "tree", "default",
 		tiles        = {"default_sapling.png"},
 
 		rarity       = 20,
-		how_to_grow  = {{ use_function = trees_lib.generate_fruit_tree,
-				 xoff = 2, zoff = 2, yoff = 0, height = 6,
-			       }},
 	}, fruit = {
 		node_name    = "default:apple",
 		description  = "Apple",
 		tiles        = {"default_apple.png"},
 		food_points  = 2,
+	}},
+	{{
+		{ use_function = trees_lib.generate_fruit_tree,
+		  xoff = 2, zoff = 2, yoff = 0, height = 6,
+		}
 	}});
 
 --- jungletree
@@ -55,10 +57,11 @@ trees_lib.register_tree( "jungletree", "default",
 		tiles        = {"default_junglesapling.png"},
 
 		rarity       = 20,
-		how_to_grow  = {{ use_function = trees_lib.generate_fruit_tree,
-				 xoff = 2, zoff = 2, yoff = 0, height = 6,
-			       }},
-	}});
+	}},
+	{
+		{ use_schematic = minetest.get_modpath("default").."/schematics/jungle_tree_from_sapling.mts"},
+	},
+	"group:soil", nil, nil);
 
 
 --- pine
@@ -82,10 +85,11 @@ trees_lib.register_tree( "pine", "default",
 		tiles        = {"default_pine_sapling.png"},
 
 		rarity       = 20,
-		how_to_grow  = {{ use_function = trees_lib.generate_fruit_tree,
-				 xoff = 2, zoff = 2, yoff = 0, height = 6,
-			       }},
-	}});
+	}},
+	{
+		{ use_schematic = minetest.get_modpath("default").."/schematics/pine_tree_from_sapling.mts"},
+	},
+	"group:soil", nil, nil);
 
 --- acacia
 trees_lib.register_tree( "acacia", "default",
@@ -108,7 +112,8 @@ trees_lib.register_tree( "acacia", "default",
 		tiles        = {"default_acacia_sapling.png"},
 
 		rarity       = 20,
-		how_to_grow  = {{ use_function = trees_lib.generate_fruit_tree,
-				 xoff = 2, zoff = 2, yoff = 0, height = 6,
-			       }},
-	}} );
+	}},
+	{
+		{ use_schematic = minetest.get_modpath("default").."/schematics/acacia_tree_from_sapling.mts"},
+	},
+	"group:soil", nil, nil);
