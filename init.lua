@@ -1,6 +1,36 @@
 
 trees_lib = {}
 
+-- place this node if a sapling does not like the environment and refuses
+-- to grow into a tree there
+trees_lib.place_when_tree_cant_grow = {name="default:dry_shrub"};
+
+-----------------------------------------------------------------------------
+-- compatibility functions so that trees_lib can work without default mod
+-----------------------------------------------------------------------------
+trees_lib.sound_leaves = function()
+	if( default and default.node_sound_leaves_defaults) then
+		return default.node_sound_leaves_defaults(table)
+	else
+		return nil
+	end
+end
+
+trees_lib.sound_wood = function()
+	if( default and default.node_sound_wood_defaults) then
+		return default.node_sound_wood_defaults(table)
+	else
+		return nil
+	end
+end
+
+-- copy of default.after_place_leaves
+trees_lib.after_place_leaves = function(pos, placer, itemstack, pointed_thing)
+	local node = minetest.get_node(pos)
+	node.param2 = 1
+	minetest.set_node(pos, node)
+end
+
 
 -----------------------------------------------------------------------------
 -- internal functions for handling identification of nodes (i.e. what is a
@@ -92,7 +122,7 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 			is_ground_content = false,
 			-- moretrees uses snappy=1 here as well
 			groups = {tree = 1, choppy = 2, oddly_breakable_by_hand = 1, flammable = 2},
-			sounds = default.node_sound_wood_defaults(),
+			sounds = trees_lib.sound_wood,
 			on_place = minetest.rotate_node
 		})
 
@@ -121,7 +151,7 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 			is_ground_content = false,
 			-- moretrees uses snappy=1 here
 			groups = {choppy = 2, oddly_breakable_by_hand = 2, flammable = 3, wood = 1},
-			sounds = default.node_sound_wood_defaults(),
+			sounds = trees_lib.sound_wood,
 		})
 		-- we need to add the craft receipe for planks -> sticks
 		-- (but since there is a default craft receipe for group:wood, that ought to be cover it)
@@ -148,8 +178,8 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 				is_ground_content = false,
 				-- moretrees sets moretrees_leaves=1, leafdecay = decay
 				groups = {snappy = 3, leafdecay = 3, flammable = 2, leaves = 1},
-				sounds = default.node_sound_leaves_defaults(),
-				after_place_node = default.after_place_leaves,
+				sounds = trees_lib.sound_leaves,
+				after_place_node = trees_lib.after_place_leaves,
 	
 				drop = {
 					max_items = 1,
@@ -192,7 +222,7 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 			},
 			groups = {snappy = 2, dig_immediate = 3, flammable = 2,
 				attached_node = 1, sapling = 1},
-			sounds = default.node_sound_leaves_defaults(),
+			sounds = trees_lib.sound_leaves,
 		})
 	end
 	if( nodes and nodes.sapling and nodes.sapling.node_name and minetest.registered_nodes[ nodes.sapling.node_name ]) then
@@ -225,7 +255,7 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 				leafdecay = 3, leafdecay_drop = 1},
 			-- TODO: what about fruits that cannot be eaten? a callback might be good
 			on_use = minetest.item_eat(nodes.fruit.food_points),
-			sounds = default.node_sound_leaves_defaults(),
+			sounds = trees_lib.sound_leaves,
 		
 			after_place_node = function(pos, placer, itemstack)
 				if placer:is_player() then
@@ -251,7 +281,7 @@ end
 -- environment) into dry shrub, thus allowing dry shrub farming;
 -- override this function if you don't like this feature
 trees_lib.failed_to_grow = function( pos, node )
-	minetest.set_node( pos, {name="default:dry_shrub"});
+	minetest.set_node( pos, trees_lib.place_when_tree_cant_grow);
 end
 
 -- called by the abm running on the saplings;
@@ -542,119 +572,36 @@ trees_lib.generate_fruit_tree = function(data, a, pos, sapling_data )
 end
 
 
-
-
 --- the standard tree; sometimes it turns out to be an apple tree
-trees_lib.register_tree( "tree", "default",
+trees_lib.register_tree( "silly", "trees_lib",
 	{  tree = {
-		node_name    = "default:tree",
-		description  = "Tree",
-		tiles        = {"default_tree_top.png", "default_tree_top.png", "default_tree.png"},
+		node_name    = "trees_lib:silly_tree",
+		description  = "Silly Tree",
+		tiles        = {"default_tree_top.png^[colorize:#015dbb70", "default_tree_top.png^[colorize:#015dbb70", "default_tree.png^[colorize:#015dbb70"},
 	}, wood = {
-		node_name    = "default:wood",
-		description  = "Wooden Planks",
+		node_name    = "trees_lib:silly_wood",
+		description  = "Silly Wooden Planks",
 		tiles        = {"default_wood.png"},
 	}, leaves = {
-		node_name    = "default:leaves",
-		description  = "Leaves",
-		tiles        = {"default_leaves.png"},
-		special_tiles= {"default_leaves_simple.png"},
+		node_name    = "trees_lib:silly_leaves",
+		description  = "Silly Leaves",
+		tiles        = {"default_leaves.png^[colorize:#01ffd870"},
+		special_tiles= {"default_leaves_simple.png^[colorize:#01ffd870"},
 	}, sapling = {
-		node_name    = "default:sapling",
-		description  = "Sapling",
-		tiles        = {"default_sapling.png"},
+		node_name    = "trees_lib:silly_sapling",
+		description  = "Silly Tree Sapling",
+		tiles        = {"default_sapling.png^[colorize:#ff840170"},
 
 		rarity       = 20,
 		how_to_grow  = {{ use_function = trees_lib.generate_fruit_tree,
 				 xoff = 2, zoff = 2, yoff = 0, height = 6,
 			       }},
 	}, fruit = {
-		node_name    = "default:apple",
-		description  = "Apple",
-		tiles        = {"default_apple.png"},
+		node_name    = "trees_lib:cfruit",
+		description  = "Yellow Copper Fruit",
+		tiles        = {"default_copper_lump.png^[colorize:#e3ff0070"},
 		food_points  = 2,
 	}});
-
---- jungletree
-trees_lib.register_tree( "jungletree", "default",
-	{  tree = {
-		node_name    = "default:jungletree",
-		description  = "Jungle Tree",
-		tiles        = {"default_jungletree_top.png", "default_jungletree_top.png", "default_jungletree.png"},
-	}, wood = {
-		node_name    = "default:junglewood",
-		description  = "Junglewood Planks",
-		tiles        = {"default_junglewood.png"},
-	}, leaves = {
-		node_name    = "default:jungleleaves",
-		description  = "Jungle Leaves",
-		tiles        = {"default_jungleleaves.png"},
-		special_tiles= {"default_jungleleaves_simple.png"},
-	}, sapling = {
-		node_name    = "default:junglesapling",
-		description  = "Jungle Sapling",
-		tiles        = {"default_junglesapling.png"},
-
-		rarity       = 20,
-		how_to_grow  = {{ use_function = trees_lib.generate_fruit_tree,
-				 xoff = 2, zoff = 2, yoff = 0, height = 6,
-			       }},
-	}});
-
-
---- pine
-trees_lib.register_tree( "pine", "default",
-	{  tree = {
-		node_name    = "default:pine_tree",
-		description  = "Pine Tree",
-		tiles        = {"default_pine_tree_top.png", "default_pine_tree_top.png", "default_pine_tree.png"},
-	}, wood = {
-		node_name    = "default:pine_wood",
-		description  = "Pine Wood Planks",
-		tiles        = {"default_pine_wood.png"},
-	}, leaves = {
-		node_name    = "default:pine_needles",
-		description  = "Pine Needles",
-		tiles        = {"default_pine_needles.png"},
-		special_tiles= nil,
-	}, sapling = {
-		node_name    = "default:pine_sapling",
-		description  = "Pine Sapling",
-		tiles        = {"default_pine_sapling.png"},
-
-		rarity       = 20,
-		how_to_grow  = {{ use_function = trees_lib.generate_fruit_tree,
-				 xoff = 2, zoff = 2, yoff = 0, height = 6,
-			       }},
-	}});
-
---- acacia
-trees_lib.register_tree( "acacia", "default",
-	{  tree = {
-		node_name    = "default:acacia_tree",
-		description  = "Acacia Tree",
-		tiles        = {"default_acacia_tree_top.png", "default_acacia_tree_top.png", "default_acacia_tree.png"},
-	}, wood = {
-		node_name    = "default:acacia_wood",
-		description  = "Acacia Wood Planks",
-		tiles        = {"default_acacia_wood.png"},
-	}, leaves = {
-		node_name    = "default:acacia_leaves",
-		description  = "Acacia Leaves",
-		tiles        = {"default_acacia_leaves.png"},
-		special_tiles= nil,
-	}, sapling = {
-		node_name    = "default:acacia_sapling",
-		description  = "Acacia Tree Sapling",
-		tiles        = {"default_acacia_sapling.png"},
-
-		rarity       = 20,
-		how_to_grow  = {{ use_function = trees_lib.generate_fruit_tree,
-				 xoff = 2, zoff = 2, yoff = 0, height = 6,
-			       }},
-	}} );
-
-
 
 
 
