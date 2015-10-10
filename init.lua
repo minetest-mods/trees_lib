@@ -398,13 +398,14 @@ end
 -----------------------------------------------------------------------------
 -- register a new tree
 -----------------------------------------------------------------------------
-trees_lib.register_tree = function( tree_name, mod_prefix, nodes )
+trees_lib.register_tree = function( tree_name, mod_prefix, nodes, growing )
 	-- register tree trunk, wood, leaves and fruit (provided they are not defined yet)
 	local cid_list = trees_lib.register_tree_nodes_and_crafts( tree_name, mod_prefix, nodes );
 
 	-- a sapling will be needed for growing the tree
 	if(   not( nodes.sapling )
-	   or not( nodes.sapling.node_name )) then
+	   or not( nodes.sapling.node_name )
+	   or not( growing )) then
 		return;
 	end
 
@@ -425,28 +426,27 @@ trees_lib.register_tree = function( tree_name, mod_prefix, nodes )
 
 		-- list of node names (can contain groups, i.e. "group:soil")
 		-- on which the sapling will grow
-		grows_on      = nodes.sapling.grows_on,
+		grows_on      = growing.grows_on,
 
 		-- are all the requirements met for growing at pos?
 		-- sapling will only grow if
-		--      nodes.sapling.can_grow( pos, node )
+		--      growing.can_grow( pos, node )
 		-- returns true
 		-- (usful for i.e. requiring water nearby, or other
 		-- more complex requirements)
-		can_grow      = nodes.sapling.can_grow,
+		can_grow      = growing.can_grow,
 
 		-- has to be either nil (for selecting a random way)
 		-- or return a specific growth function like the ones in
 		-- the list how_to_grow (see below) when called with
-		--      nodes.sapling.select_how_to_grow( pos, node,
-		--                         nodes.sapling.how_to_grow )
-		select_how_to_grow = nodes.sapling.select_how_to_grow,
+		--      growing.select_how_to_grow( pos, node, growing.how_to_grow )
+		select_how_to_grow = growing.select_how_to_grow,
 
 		-- list of all methods that can turn the sapling into a
 		-- tree; can be a function, a file name containing a schematic
 		-- or a table for L-system trees;
 		-- this table/list is REQUIRED
-		how_to_grow   = nodes.sapling.how_to_grow,
+		how_to_grow   = growing.how_to_grow,
 	};
 
 	-- a new tree was registered - call all functions that want to be told about new trees
@@ -593,15 +593,19 @@ trees_lib.register_tree( "silly", "trees_lib",
 		tiles        = {"default_sapling.png^[colorize:#ff840170"},
 
 		rarity       = 20,
-		how_to_grow  = {{ use_function = trees_lib.generate_fruit_tree,
-				 xoff = 2, zoff = 2, yoff = 0, height = 6,
-			       }},
 	}, fruit = {
 		node_name    = "trees_lib:cfruit",
 		description  = "Yellow Copper Fruit",
 		tiles        = {"default_copper_lump.png^[colorize:#e3ff0070"},
 		food_points  = 2,
-	}});
+	}},
+	{ how_to_grow  = {
+		{ use_function = trees_lib.generate_fruit_tree,
+		  xoff = 2, zoff = 2, yoff = 0, height = 6,
+		}
+	}}
+
+	);
 
 
 
