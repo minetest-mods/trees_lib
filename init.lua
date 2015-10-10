@@ -284,6 +284,21 @@ trees_lib.failed_to_grow = function( pos, node )
 	minetest.set_node( pos, trees_lib.place_when_tree_cant_grow);
 end
 
+-- this function is called just before a tree actually grows;
+-- the function ought to return how_to_grow for normal tree growth;
+-- returning another way of growing is also possible (i.e. diffrent
+-- model when growing in flower pots/on stone)
+trees_lib.change_tree_growth = function( pos, node, how_to_grow )
+	return how_to_grow;
+end
+
+
+-- this function is called whenever a sapling of type node has grown
+-- into a tree using how_to_grow at position pos
+trees_lib.a_tree_has_grown = function( pos, node, how_to_grow )
+	return;
+end
+
 -- called by the abm running on the saplings;
 -- if force is set, the tree will grow even if it usually wouldn't in that
 -- environment
@@ -347,6 +362,9 @@ trees_lib.tree_abm_called = function( pos, node, force_grow )
 		how_to_grow = sapling_data.how_to_grow[ math.random( 1, #sapling_data.how_to_grow )];
 	end
 
+	-- this function may change the way the tree grows (i.e. select a special method for trees growing in flower pots or on stone ground)
+	how_to_grow = trees_lib.change_tree_growth( pos, node, how_to_grow );
+
 	-- abort if no way was found to grow the tree
 	if( not( how_to_grow ) or type(how_to_grow)~="table") then
 		trees_lib.failed_to_grow( pos, node );
@@ -374,7 +392,9 @@ trees_lib.tree_abm_called = function( pos, node, force_grow )
 
 	-- grow the tree using a schematic
 	elseif( how_to_grow.use_schematic and type(how_to_grow.use_schematic)=="string") then
-		-- TODO: remove sapling; use voxelmanip
+		-- TODO: use voxelmanip
+		-- remove the sapling
+		minetest.set_node( pos, {name="air"});
 		-- TODO: determine xoff, yoff and zoff when registering the tree
 		--       (if yoff is not given, then use 0)
 		minetest.place_schematic(
@@ -393,7 +413,13 @@ trees_lib.tree_abm_called = function( pos, node, force_grow )
 		minetest.set_node( pos, {name="air"});
 		-- spawn the l-system tree
 		minetest.spawn_tree(pos, how_to_grow.use_lsystem );
+
+	-- else prevent call of success function below
+	else
+		return;
 	end
+
+	trees_lib.a_tree_has_grown( pos, node, how_to_grow );
 end
 
 
