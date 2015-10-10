@@ -481,7 +481,7 @@ trees_lib.generate_fruit_tree = function(data, a, pos, sapling_data )
 
 	local tree_cid   = sapling_data.cid.tree;
 	local leaves_cid = sapling_data.cid.leaves;
-	local furit_cid  = sapling_data.cid.fruit;
+	local fruit_cid  = sapling_data.cid.fruit;
 
 	local height = math.random(3,7);
 	local size   = 2; --math.random(1,3);
@@ -507,7 +507,7 @@ trees_lib.generate_fruit_tree = function(data, a, pos, sapling_data )
 		local vi = a:index(x - 1, y + height + y_dist, z + z_dist)
 		for x_dist = -1, 1 do
 			if data[vi] == c_air or data[vi] == c_ignore then
-				if fruit_cid and fruit_cid ~= leaves_cid and random(1, 8) == 1 then
+				if fruit_cid and fruit_cid ~= leaves_cid and math.random(1, 8) == 1 then
 					data[vi] = fruit_cid
 				else
 					data[vi] = leaves_cid
@@ -529,7 +529,7 @@ trees_lib.generate_fruit_tree = function(data, a, pos, sapling_data )
 		for zi = 0, 1 do
 			local vi = a:index(clust_x + xi, clust_y + yi, clust_z + zi)
 			if data[vi] == c_air or data[vi] == c_ignore then
-				if fruit_cid and fruit_cid ~= leaves_cid and random(1, 8) == 1 then
+				if fruit_cid and fruit_cid ~= leaves_cid and math.random(1, 8) == 1 then
 					data[vi] = fruit_cid
 				else
 					data[vi] = leaves_cid
