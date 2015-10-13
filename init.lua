@@ -302,7 +302,7 @@ end
 -- called by the abm running on the saplings;
 -- if force is set, the tree will grow even if it usually wouldn't in that
 -- environment
-trees_lib.tree_abm_called = function( pos, node, force_grow )
+trees_lib.tree_abm_called = function( pos, node, active_object_count, active_object_count_wider, force_grow)
 	-- if we don't have further information about that sapling, then abort
 	if(   not( node )
 	   or not( node.name ) 
@@ -316,6 +316,8 @@ trees_lib.tree_abm_called = function( pos, node, force_grow )
 	-- get information about what we're supposed to do with that sapling
 	local sapling_data = trees_lib.is_sapling[ node.name ];
 
+	-- the type of ground might be of intrest for further functions (i.e. can_grow, select_how_to_grow)
+	local ground_found = nil;
 	-- a quick check of the ground; sapling_data.grows_on has to be a list of all
 	-- ground types acceptable for the tree
 	if( not(force_grow) and sapling_data.grows_on and type( sapling_data.grows_on )=="table") then
@@ -324,19 +326,18 @@ trees_lib.tree_abm_called = function( pos, node, force_grow )
 		if( not(node_under) or node_under.name=="ignore") then
 			return;
 		end
-		local found = false;
 		-- search all acceptable ground names
 		for _,g in ipairs( sapling_data.grows_on ) do
 			if( g==node_under.name ) then
-				found = g;
-			elseif( not( found)
+				ground_found = g;
+			elseif( not( ground_found)
 			    and string.sub(g,1,6)=="group:"
 			    and minetest.get_item_group( node_under.name, string.sub(g,7))~=0 ) then
-				found = g;
+				ground_found = g;
 			end
 		end
 		-- abort if the tree does not like this type of ground
-		if( not( found )) then
+		if( not( ground_found )) then
 			-- trun into dry shrub
 			trees_lib.failed_to_grow( pos, node );
 			return;
@@ -345,9 +346,10 @@ trees_lib.tree_abm_called = function( pos, node, force_grow )
 
 	-- the tree may come with a more complex function that checks if it can grow there
 	if( not(force_grow) and sapling_data.can_grow and type( sapling_data.can_grow)=="function" ) then
-		if( not( sapling_data.can_grow( pos, node ))) then
+		-- the parameter ground_found is nil if the tree did not specify any demands for a particular ground
+		if( not( sapling_data.can_grow( pos, node, ground_found ))) then
 			-- trun into dry shrub
-			trees_lib.failed_to_grow( pos, node );
+			trees_lib.failed_to_grow( pos, node, ground_found );
 			return;
 		end
 	end
@@ -357,7 +359,13 @@ trees_lib.tree_abm_called = function( pos, node, force_grow )
 	-- the sapling may - depending on the circumstances - choose a specific growth function
 	-- instead of a random one
 	if( sapling_data.select_how_to_grow and type( sapling_data.select_how_to_grow)=="function") then
-		how_to_grow = sapling_data.select_how_to_grow( pos, node, sapling_data.how_to_grow );
+		-- ground_found is nil if the tree did not specify any demands for a particular ground
+		how_to_grow = sapling_data.select_how_to_grow( pos, node, sapling_data.how_to_grow, ground_found );
+		-- the select_how_to_grow function may either return a table or a number indicating which
+		-- growth method to select
+		if( how_to_grow and type(how_to_grow)=="number" and sapling_data.how_to_grow[ how_to_grow ]) then
+			how_to_grow = sapling_data.how_to_grow[ how_to_grow ];
+		end
 	else -- else select a random one
 		how_to_grow = sapling_data.how_to_grow[ math.random( 1, #sapling_data.how_to_grow )];
 	end
@@ -453,12 +461,15 @@ trees_lib.register_tree = function( tree_name, mod_prefix, nodes, growing_method
 		nodes         = nodes,
 
 		-- list of node names (can contain groups, i.e. "group:soil")
-		-- on which the sapling will grow
+		-- on which the sapling will grow;
+		-- note: the parameter ground_found to the functions below can only be
+		--       passed on if grows_on has been specified (else the sapling does
+		--       not do any ground checks on its own)
 		grows_on      = grows_on_node_type_list,
 
 		-- are all the requirements met for growing at pos?
 		-- sapling will only grow if
-		--      growing.can_grow( pos, node )
+		--      growing.can_grow( pos, node, ground_found )
 		-- returns true
 		-- (usful for i.e. requiring water nearby, or other
 		-- more complex requirements)
@@ -467,7 +478,7 @@ trees_lib.register_tree = function( tree_name, mod_prefix, nodes, growing_method
 		-- has to be either nil (for selecting a random way)
 		-- or return a specific growth function like the ones in
 		-- the list how_to_grow (see below) when called with
-		--      growing.select_how_to_grow( pos, node, growing.how_to_grow )
+		--      growing.select_how_to_grow( pos, node, growing.how_to_grow, ground_found )
 		select_how_to_grow = select_how_to_grow_function,
 
 		-- list of all methods that can turn the sapling into a
@@ -680,8 +691,8 @@ trees_lib.register_tree( "silly", "trees_lib",
 			}
 		},
 	},
-	-- no grows_on_node_type_list - the tree grows everywhere
-	nil,
+	-- grows_on_node_type_list - the tree only grows on nodes of this type
+	{"default:cobble", "group:soil"},
 	-- no limits as to where the tree can grow (no can_grow_function)
 	nil,
 	-- no select_how_to_grow_function - the tree uses the same method everywhere
