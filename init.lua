@@ -399,7 +399,9 @@ trees_lib.tree_abm_called = function( pos, node, active_object_count, active_obj
 
 
 	-- grow the tree using a schematic
-	elseif( how_to_grow.use_schematic and type(how_to_grow.use_schematic)=="string") then
+	elseif( how_to_grow.use_schematic
+	   and (type(how_to_grow.use_schematic)=="string"
+	     or type(how_to_grow.use_schematic)=="table")) then
 		-- TODO: use voxelmanip
 		-- remove the sapling
 		minetest.set_node( pos, {name="air"});
@@ -610,6 +612,71 @@ trees_lib.generate_fruit_tree = function(data, a, pos, sapling_data )
 	end
 end
 
+-- Create and initialize a table for a schematic.
+local function vmg_schematic_array(width, height, depth)
+        -- Dimensions of data array.
+        local s = {size={x=width, y=height, z=depth}}
+        s.data = {}
+
+        for x = 0,width-1 do
+                for y = 0,height-1 do
+                        for z = 0,depth-1 do
+                                local i = x*width*height + y*width + z + 1
+                                s.data[i] = {}
+                                s.data[i].name = "air"
+                                s.data[i].param1 = 000
+                        end
+                end
+        end
+
+        s.yslice_prob = {}
+
+        return s
+end
+
+
+-- this is taken as an example from https://github.com/duane-r/valleys_c/blob/master/deco_banana.lua
+-- A shock of leaves at the top and some fruit.
+local function vmg_generate_banana_schematic(trunk_height)
+        local height = trunk_height + 3
+        local radius = 1
+        local width = 3
+        local s = vmg_schematic_array(width, height, width)
+
+        -- the main trunk
+        for y = 0,trunk_height do
+                local i = (0+radius)*width*height + y*width + (0+radius) + 1
+                s.data[i].name = "trees_lib:silly_tree"
+                s.data[i].param1 = 255
+        end
+
+        -- leaves at the top
+        for x = -1,1 do
+                for y = trunk_height+1, height-1 do
+                        for z = -1,1 do
+                                local i = (x+radius)*width*height + y*width + (z+radius) + 1
+                                if y > height - 2 then
+                                        s.data[i].name = "trees_lib:silly_leaves"
+                                        if x == 0 and z == 0 then
+                                                s.data[i].param1 = 255
+                                        else
+                                                s.data[i].param1 = 127
+                                        end
+                                elseif x == 0 and z == 0 then
+                                        s.data[i].name = "trees_lib:silly_leaves"
+                                        s.data[i].param1 = 255
+                                elseif x ~= 0 or z ~= 0 then
+                                        s.data[i].name = "trees_lib:cfruit"
+                                        s.data[i].param1 = 75
+                                end
+                        end
+                end
+        end
+
+        return s
+end
+
+
 
 --- the standard tree; sometimes it turns out to be an apple tree
 trees_lib.register_tree( "silly", "trees_lib",
@@ -652,6 +719,17 @@ trees_lib.register_tree( "silly", "trees_lib",
 			use_schematic = minetest.get_modpath("default").."/schematics/acacia_tree_from_sapling.mts",
 			-- TODO: determine these values automaticly
 			xoff = 4, zoff = 4, yoff = 0, height = 10,
+			-- use a schematic with diffrent nodes
+			use_replacements = {
+				{"default:acacia_tree",  "trees_lib:silly_tree"},
+				{"default:acacia_leaves","trees_lib:silly_leaves"},
+			}
+		}, {
+			-- schematics in table form are also acceptable
+			use_schematic = vmg_generate_banana_schematic(3),
+			-- TODO: determine these values automaticly
+			xoff = 1, zoff = 1, yoff = 0, height = 8,
+			-- TODO: minetest.place_schematic does not apply replacements for tables
 			-- use a schematic with diffrent nodes
 			use_replacements = {
 				{"default:acacia_tree",  "trees_lib:silly_tree"},
