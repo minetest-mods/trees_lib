@@ -390,7 +390,7 @@ trees_lib.tree_abm_called = function( pos, node, active_object_count, active_obj
 		local a = VoxelArea:new({MinEdge = minp, MaxEdge = maxp})
 		local data = vm:get_data()
 
-		how_to_grow.use_function( data, a, pos, sapling_data );
+		how_to_grow.use_function( data, a, pos, sapling_data, how_to_grow.extra_params );
 
 		-- write the data back
 		vm:set_data(data)
@@ -548,7 +548,7 @@ end
 
 -- Apple tree and jungle tree trunk and leaves function
 
-trees_lib.generate_fruit_tree = function(data, a, pos, sapling_data )
+trees_lib.generate_fruit_tree = function(data, a, pos, sapling_data, extra_params )
 
 	local tree_cid   = sapling_data.cid.tree;
 	local leaves_cid = sapling_data.cid.leaves;
@@ -611,6 +611,36 @@ trees_lib.generate_fruit_tree = function(data, a, pos, sapling_data )
 		end
 	end
 end
+
+
+-- a very small tree
+trees_lib.unhappy_tree = function(data, a, pos, sapling_data, extra_params )
+
+	local tree_cid   = sapling_data.cid.tree;
+	local leaves_cid = sapling_data.cid.leaves;
+
+	local x, y, z = pos.x, pos.y, pos.z
+	local c_air = minetest.get_content_id("air")
+	local c_ignore = minetest.get_content_id("ignore")
+
+	-- Trunk
+	data[a:index(x, y, z)] = tree_cid;
+	local found = data[a:index(x, y+1, z )];
+	if( found==c_air or found==c_ignore ) then
+		data[a:index(x, y+1, z)] = tree_cid;
+	end
+	for xv=-1,1 do
+		for zv=-1,1 do
+			if( math.random(1,2)==1 ) then
+				local found = data[a:index(x+xv, y+1, z+zv )]
+				if( found==c_air or found==c_ignore ) then
+					data[a:index(x+xv, y+1, z+zv )] = leaves_cid;
+				end
+			end
+		end
+	end
+end
+
 
 -- Create and initialize a table for a schematic.
 local function vmg_schematic_array(width, height, depth)
@@ -677,6 +707,34 @@ local function vmg_generate_banana_schematic(trunk_height)
 end
 
 
+-- this function allows the tree to chose between diffrent growth functions (or provide its own)
+local silly_tree_select_how_to_grow = function( pos, node, sapling_data_how_to_grow, ground_found )
+	-- grow into a normal fruit tree on dirt or grass
+	if(     ground_found == "default:dirt"
+	    or  ground_found == "default:dirt_with_grass" ) then
+		return 1;
+
+	-- if growing on desert sand, then grow like an acacia
+	elseif( ground_found == "default:desert_sand" ) then
+		return 2;
+	-- on normal sand, grow like the banana tree from valleys_c
+	elseif( ground_found == "default:sand" ) then
+		return 3;
+
+	-- on soil, grow like one of the birches from moretrees
+	elseif( ground_found == "group:soil" ) then
+		return math.random(4,5);
+
+	-- stone is not the ideal ground to grow on...
+	elseif( ground_found == "group:stone" ) then
+		-- this shows that we can also return new tree types
+		return {
+				use_function = trees_lib.unhappy_tree,
+				xoff = 1, zoff = 1, yoff = 0, height = 3,
+			};
+	end
+end
+
 
 --- the standard tree; sometimes it turns out to be an apple tree
 trees_lib.register_tree( "silly", "trees_lib",
@@ -707,6 +765,7 @@ trees_lib.register_tree( "silly", "trees_lib",
 	}},
 	-- the diffrent ways of how a tree can be grown
 	{
+		    -- version 1
 		-- one of these methods will be choosen randomly
 		{
 			-- a function - like that used to create the trees/apple trees in mapgen v6
@@ -714,7 +773,7 @@ trees_lib.register_tree( "silly", "trees_lib",
 			-- How far will the tree reach in each direction? We need to load a
 			-- sufficiently large voxelmanip area.
 			xoff = 2, zoff = 2, yoff = 0, height = 12,
-		}, {
+		}, { -- version 2
 			-- schematics can be used as well
 			use_schematic = minetest.get_modpath("default").."/schematics/acacia_tree_from_sapling.mts",
 			-- TODO: determine these values automaticly
@@ -724,7 +783,7 @@ trees_lib.register_tree( "silly", "trees_lib",
 				{"default:acacia_tree",  "trees_lib:silly_tree"},
 				{"default:acacia_leaves","trees_lib:silly_leaves"},
 			}
-		}, {
+		}, { -- version 3
 			-- schematics in table form are also acceptable
 			use_schematic = vmg_generate_banana_schematic(3),
 			-- TODO: determine these values automaticly
@@ -735,7 +794,7 @@ trees_lib.register_tree( "silly", "trees_lib",
 				{"default:acacia_tree",  "trees_lib:silly_tree"},
 				{"default:acacia_leaves","trees_lib:silly_leaves"},
 			}
-		}, {
+		}, { -- version 4
 			-- this is moretrees.birch_model1
 			use_lsystem = {
 				axiom="FFFFFdddccA/FFFFFFcA/FFFFFFcB",
@@ -751,7 +810,7 @@ trees_lib.register_tree( "silly", "trees_lib",
 				trunk_type="single",
 				thin_branches=true
 			}
-		},{
+		},{ -- version 5
 			-- this is moretrees.birch_model2
 			use_lsystem = {
 				axiom="FFFdddccA/FFFFFccA/FFFFFccB",
@@ -770,11 +829,11 @@ trees_lib.register_tree( "silly", "trees_lib",
 		},
 	},
 	-- grows_on_node_type_list - the tree only grows on nodes of this type
-	{"default:cobble", "group:soil"},
+	{"default:cobble", "group:soil", "default:dirt", "default:dirt_with_grass", "default:desert_sand","default:sand","group:soil","group:stone"},
 	-- no limits as to where the tree can grow (no can_grow_function)
 	nil,
 	-- no select_how_to_grow_function - the tree uses the same method everywhere
-	nil
+	silly_tree_select_how_to_grow
 	);
 
 
