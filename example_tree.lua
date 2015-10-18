@@ -1,5 +1,8 @@
+--
+-- This is an actual example of how trees_lib can be used
+--
 
-
+-- this is taken as an example from https://github.com/duane-r/valleys_c/blob/master/*
 -- Create and initialize a table for a schematic.
 local function vmg_schematic_array(width, height, depth)
         -- Dimensions of data array.
@@ -34,7 +37,7 @@ local function vmg_generate_banana_schematic(trunk_height)
         -- the main trunk
         for y = 0,trunk_height do
                 local i = (0+radius)*width*height + y*width + (0+radius) + 1
-                s.data[i].name = "trees_lib:silly_tree"
+                s.data[i].name = "trees_lib:example_tree"
                 s.data[i].param1 = 255
         end
 
@@ -44,14 +47,14 @@ local function vmg_generate_banana_schematic(trunk_height)
                         for z = -1,1 do
                                 local i = (x+radius)*width*height + y*width + (z+radius) + 1
                                 if y > height - 2 then
-                                        s.data[i].name = "trees_lib:silly_leaves"
+                                        s.data[i].name = "trees_lib:example_leaves"
                                         if x == 0 and z == 0 then
                                                 s.data[i].param1 = 255
                                         else
                                                 s.data[i].param1 = 127
                                         end
                                 elseif x == 0 and z == 0 then
-                                        s.data[i].name = "trees_lib:silly_leaves"
+                                        s.data[i].name = "trees_lib:example_leaves"
                                         s.data[i].param1 = 255
                                 elseif x ~= 0 or z ~= 0 then
                                         s.data[i].name = "trees_lib:cfruit"
@@ -66,7 +69,7 @@ end
 
 
 -- this function allows the tree to chose between diffrent growth functions (or provide its own)
-local silly_tree_select_how_to_grow = function( pos, node, sapling_data_how_to_grow, ground_found )
+local example_tree_select_how_to_grow = function( pos, node, sapling_data_how_to_grow, ground_found )
 	-- grow into a normal fruit tree on dirt or grass
 	if(     ground_found == "default:dirt"
 	    or  ground_found == "default:dirt_with_grass" ) then
@@ -94,24 +97,24 @@ local silly_tree_select_how_to_grow = function( pos, node, sapling_data_how_to_g
 end
 
 
---- the standard tree; sometimes it turns out to be an apple tree
-trees_lib.register_tree( "silly", "trees_lib",
+--- the actual example tree; it will grow in very diffrent ways depending on where it is placed
+trees_lib.register_tree( "example", "trees_lib",
 	{  tree = {
-		node_name    = "trees_lib:silly_tree",
-		description  = "Silly Tree",
+		node_name    = "trees_lib:example_tree",
+		description  = "example Tree",
 		tiles        = {"default_tree_top.png^[colorize:#015dbb70", "default_tree_top.png^[colorize:#015dbb70", "default_tree.png^[colorize:#015dbb70"},
 	}, wood = {
-		node_name    = "trees_lib:silly_wood",
-		description  = "Silly Wooden Planks",
+		node_name    = "trees_lib:example_wood",
+		description  = "example Wooden Planks",
 		tiles        = {"default_wood.png"},
 	}, leaves = {
-		node_name    = "trees_lib:silly_leaves",
-		description  = "Silly Leaves",
+		node_name    = "trees_lib:example_leaves",
+		description  = "example Leaves",
 		tiles        = {"default_leaves.png^[colorize:#01ffd870"},
 		special_tiles= {"default_leaves_simple.png^[colorize:#01ffd870"},
 	}, sapling = {
-		node_name    = "trees_lib:silly_sapling",
-		description  = "Silly Tree Sapling",
+		node_name    = "trees_lib:example_sapling",
+		description  = "example Tree Sapling",
 		tiles        = {"default_sapling.png^[colorize:#ff840170"},
 
 		rarity       = 20,
@@ -138,8 +141,8 @@ trees_lib.register_tree( "silly", "trees_lib",
 			xoff = 4, zoff = 4, yoff = 0, height = 10,
 			-- use a schematic with diffrent nodes
 			use_replacements = {
-				{"default:acacia_tree",  "trees_lib:silly_tree"},
-				{"default:acacia_leaves","trees_lib:silly_leaves"},
+				{"default:acacia_tree",  "trees_lib:example_tree"},
+				{"default:acacia_leaves","trees_lib:example_leaves"},
 			}
 		}, { -- version 3
 			-- schematics in table form are also acceptable
@@ -149,8 +152,8 @@ trees_lib.register_tree( "silly", "trees_lib",
 			-- TODO: minetest.place_schematic does not apply replacements for tables
 			-- use a schematic with diffrent nodes
 			use_replacements = {
-				{"default:acacia_tree",  "trees_lib:silly_tree"},
-				{"default:acacia_leaves","trees_lib:silly_leaves"},
+				{"default:acacia_tree",  "trees_lib:example_tree"},
+				{"default:acacia_leaves","trees_lib:example_leaves"},
 			}
 		}, { -- version 4
 			-- this is moretrees.birch_model1
@@ -160,8 +163,8 @@ trees_lib.register_tree( "silly", "trees_lib",
 				rules_b="[&&&ddd^^ddddd][&&&---ddd^^ddddd][&&&+++ddd^^ddddd][&&&++++++ddd^^ddddd]",
 				rules_c="/",
 				rules_d="F",
-				trunk="trees_lib:silly_tree", --"moretrees:birch_trunk",
-				leaves="trees_lib:silly_leaves", --"moretrees:birch_leaves",
+				trunk="trees_lib:example_tree", --"moretrees:birch_trunk",
+				leaves="trees_lib:example_leaves", --"moretrees:birch_leaves",
 				angle=30,
 				iterations=2,
 				random_level=0,
@@ -176,8 +179,8 @@ trees_lib.register_tree( "silly", "trees_lib",
 				rules_b="[&&&dFF^^FFFd][&&&---dFFF^^FFFd][&&&+++dFF^^FFFd][&&&++++++dFF^^FFFd]",
 				rules_c="/",
 				rules_d="F",
-				trunk="trees_lib:silly_tree", --"moretrees:birch_trunk",
-				leaves="trees_lib:silly_leaves", --"moretrees:birch_leaves",
+				trunk="trees_lib:example_tree", --"moretrees:birch_trunk",
+				leaves="trees_lib:example_leaves", --"moretrees:birch_leaves",
 				angle=30,
 				iterations=2,
 				random_level=0,
@@ -188,26 +191,9 @@ trees_lib.register_tree( "silly", "trees_lib",
 	},
 	-- grows_on_node_type_list - the tree only grows on nodes of this type
 	{"default:cobble", "group:soil", "default:dirt", "default:dirt_with_grass", "default:desert_sand","default:sand","group:soil","group:stone"},
-	-- no limits as to where the tree can grow (no can_grow_function)
+	-- no (additional) limits as to where the tree can grow (no can_grow_function)
 	nil,
-	-- no select_how_to_grow_function - the tree uses the same method everywhere
-	silly_tree_select_how_to_grow
-	);
+	-- the tree will grow in a diffrent way depending on the ground it grows on; see the function below for details
+	example_tree_select_how_to_grow
+);
 
-
---[[
-tree data:
-	growth_function = {
-		grows_on = {"group:soil", "default:desert_sand", "homedecor:flower_pot_green"}, -- etc.
-		-- can the sapling in node grow at pos?
-		can_grow_function = function( pos, node )
-				return true;
-			end,
-		-- which of the various growth functions shall be used for this sapling?
-		-- if select_how_to_grow is not provided, a random one will be selected
-		select_how_to_grow = function( pos, node )
-				return 1;
-		end,
-		-- list of tables of all methods known for spawning this tree
-		how_to_grow = {}
---]]
