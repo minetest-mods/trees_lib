@@ -90,7 +90,7 @@ local example_tree_select_how_to_grow = function( pos, node, sapling_data_how_to
 	elseif( ground_found == "group:stone" ) then
 		-- this shows that we can also return new tree types
 		return {
-				use_function = trees_lib.unhappy_tree,
+				use_function = trees_lib.generate_unhappy_tree,
 				xoff = 1, zoff = 1, yoff = 0, height = 3,
 			};
 	end
