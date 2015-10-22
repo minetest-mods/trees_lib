@@ -218,7 +218,8 @@ trees_lib.register_one_node = function( def_common, def_default, def_user, node_
 	if( minetest.registered_nodes[ node_name ]) then
 		-- store the content id of this node for this type
 		cid[ node_type ] = minetest.get_content_id( node_name );
-		return;
+		def_user.node_name = node_name;
+		return def_user;
 	end
 
 	-- create the new node definition
@@ -268,6 +269,7 @@ trees_lib.register_one_node = function( def_common, def_default, def_user, node_
 
 	-- store the content id of the newly registered node
 	cid[ node_type ] = minetest.get_content_id( node_name );
+	return def_user;
 end
 
 
@@ -302,7 +304,7 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 	end
 
 	-- register the sapling
-	trees_lib.register_one_node( trees_lib.node_def_sapling,
+	nodes.sapling = trees_lib.register_one_node( trees_lib.node_def_sapling,
 		{
 			node_name = sapling_node_name,
 			description = tree_name_upcase.." Sapling",
@@ -312,7 +314,7 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 
 
 	-- register the tree trunk
-	trees_lib.register_one_node( trees_lib.node_def_tree,
+	nodes.tree = trees_lib.register_one_node( trees_lib.node_def_tree,
 		{
 			node_name = mod_prefix..':'..tree_name..'_tree',
 			description = tree_name_upcase.." Tree",
@@ -323,7 +325,7 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 		}, nodes.tree, "tree", sapling_node_name, cid );
 
 	-- register the wood that belongs to the tree
-	trees_lib.register_one_node( trees_lib.node_def_wood,
+	nodes.wood = trees_lib.register_one_node( trees_lib.node_def_wood,
 		{
 			node_name = mod_prefix..':'..tree_name..'_wood',
 			description = tree_name_upcase.." Planks",
@@ -348,7 +350,7 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 			if( nodes[ k ] and nodes[ k ].node_name ) then
 				leaves_node_name = nodes[ k ].node_name;
 			end
-			trees_lib.register_one_node( trees_lib.node_def_leaves,
+			nodes[ k ] = trees_lib.register_one_node( trees_lib.node_def_leaves,
 			{
 				node_name = leaves_node_name,
 				description = tree_name_upcase.." Leaves",
@@ -378,7 +380,7 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 	end
 
 	-- register the fruit
-	trees_lib.register_one_node( trees_lib.node_def_fruit,
+	nodes.fruit = trees_lib.register_one_node( trees_lib.node_def_fruit,
 		{
 			node_name = mod_prefix..':'..tree_name..'_fruit',
 			description = tree_name_upcase.." Fruit",
