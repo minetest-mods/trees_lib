@@ -333,8 +333,9 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 
 
 	-- default drop rate for the sapling (1/20)
-	if( not( nodes.sapling.rarity )) then
-		nodes.sapling.rarity = 20;
+	local sapling_rarity = 20;
+	if( nodes.sapling and nodes.sapling.rarity ) then
+		sapling_rarity = nodes.sapling.rarity;
 	end
 
 	-- register the leaves; some trees may have more than one type of leaves (i.e. moretrees jungletrees)
@@ -343,9 +344,9 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 		-- not all leaf types need to exist; we just expect at least one type of leaves to be there
 		if( nodes[ k ] or k=='leaves') then
 			-- we need to determine the node name now as leaves tend to drop themshelves sometimes
-			local leaves_node_name = nodes[ k ].node_name;
-			if( not( leaves_node_name )) then
-				leaves_node_name = mod_prefix..':'..tree_name..'_'..k;
+			local leaves_node_name = mod_prefix..':'..tree_name..'_'..k;
+			if( nodes[ k ] and nodes[ k ].node_name ) then
+				leaves_node_name = nodes[ k ].node_name;
 			end
 			trees_lib.register_one_node( trees_lib.node_def_leaves,
 			{
@@ -359,8 +360,8 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 					items = {
 						{
 							-- player will get sapling with 1/20 chance
-							items = { nodes.sapling.node_name},
-							rarity = nodes.sapling.rarity,
+							items = { sapling_node_name},
+							rarity = sapling_rarity,
 						},
 						{
 							-- player will get leaves only if he get no saplings,
