@@ -279,6 +279,9 @@ end
 -- * if nodes.wood.dont_add_craft_receipe is set, no craft receipe
 --   for 1 tree -> 4 wood will be added
 -- * there can be up to 5 diffrent leaves types
+-- * Note: craft receipes for fuel (tree, wood, leaves) do not need to be
+--         added because default already contains general craft receipes
+--         based on the respective groups
 trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, nodes )
 
 	-- gather all the relevant content ids
@@ -393,8 +396,6 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 				}
 			});
 	end
-
-	-- TODO: further craft receipes may be needed (i.e. for fuel)
 
 	-- return the ids we've gathered
 	return cid;
@@ -571,7 +572,16 @@ end
 -----------------------------------------------------------------------------
 -- register a new tree
 -----------------------------------------------------------------------------
-trees_lib.register_tree = function( tree_name, mod_prefix, nodes, growing_methods, grows_on_node_type_list, can_grow_function, select_how_to_grow_function, interval, chance )
+trees_lib.register_tree = function( tree_name, nodes, growing_methods, grows_on_node_type_list, can_grow_function, select_how_to_grow_function, interval, chance )
+	-- the tree name is the minimum needed in order to register a new tree
+	if( not( tree_name )) then
+		return;
+	end
+
+	-- we may have to register nodes - and those have to be registered under the name of whichever mod called this function and is the "current" mod
+	local mod_prefix = minetest.get_current_modname();
+
+
 	-- register tree trunk, wood, leaves and fruit (provided they are not defined yet)
 	local cid_list = trees_lib.register_tree_nodes_and_crafts( tree_name, mod_prefix, nodes );
 

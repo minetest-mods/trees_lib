@@ -97,32 +97,36 @@ local example_tree_select_how_to_grow = function( pos, node, sapling_data_how_to
 end
 
 
---- the actual example tree; it will grow in very diffrent ways depending on where it is placed
-trees_lib.register_tree( "example", "trees_lib",
+--- the actual example tree; it will grow in very diffrent ways depending on where it is placed;
+-- most of the node names and descriptions can be created automaticly;
+-- all we have to supply in such cases are the texture names
+trees_lib.register_tree( "example",
 	{  tree = {
-		node_name    = "trees_lib:example_tree",
-		description  = "example Tree",
+		--node_name    = "trees_lib:example_tree",
+		--description  = "example Tree",
 		tiles        = {"default_tree_top.png^[colorize:#015dbb70", "default_tree_top.png^[colorize:#015dbb70", "default_tree.png^[colorize:#015dbb70"},
 	}, wood = {
-		node_name    = "trees_lib:example_wood",
-		description  = "example Wooden Planks",
-		tiles        = {"default_wood.png"},
+		--node_name    = "trees_lib:example_wood",
+		--description  = "example Wooden Planks",
+		tiles        = {"default_wood.png^[colorize:#015dbb70"},
 	}, leaves = {
-		node_name    = "trees_lib:example_leaves",
-		description  = "example Leaves",
+		--node_name    = "trees_lib:example_leaves",
+		--description  = "example Leaves",
 		tiles        = {"default_leaves.png^[colorize:#01ffd870"},
 		special_tiles= {"default_leaves_simple.png^[colorize:#01ffd870"},
 	}, sapling = {
-		node_name    = "trees_lib:example_sapling",
-		description  = "example Tree Sapling",
+		--node_name    = "trees_lib:example_sapling",
+		--description  = "example Tree Sapling",
 		tiles        = {"default_sapling.png^[colorize:#ff840170"},
 
-		rarity       = 20,
+		--rarity       = 20,
 	}, fruit = {
+		-- the fruit diverges in name and description from what would automaticly be created
 		node_name    = "trees_lib:cfruit",
 		description  = "Yellow Copper Fruit",
 		tiles        = {"default_copper_lump.png^[colorize:#e3ff0070"},
-		food_points  = 2,
+		-- the fruit can be eaten
+		on_use = minetest.item_eat(2),
 	}},
 	-- the diffrent ways of how a tree can be grown
 	{
