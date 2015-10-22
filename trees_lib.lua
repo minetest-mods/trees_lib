@@ -373,6 +373,13 @@ trees_lib.tree_abm_called = function( pos, node, active_object_count, active_obj
 	-- this function may change the way the tree grows (i.e. select a special method for trees growing in flower pots or on stone ground)
 	how_to_grow = trees_lib.change_tree_growth( pos, node, how_to_grow );
 
+	-- actually grow the tree in a seperate function
+	trees_lib.tree_abm_grow_tree( pos, node, sapling_data, how_to_grow, force_grow );
+end
+
+
+-- actually grow the tree from a sapling
+trees_lib.tree_abm_grow_tree = function( pos, node, sapling_data, how_to_grow, force_grow )
 	-- abort if no way was found to grow the tree
 	if( not( how_to_grow ) or type(how_to_grow)~="table") then
 		trees_lib.failed_to_grow( pos, node );
@@ -436,7 +443,7 @@ end
 -----------------------------------------------------------------------------
 -- register a new tree
 -----------------------------------------------------------------------------
-trees_lib.register_tree = function( tree_name, mod_prefix, nodes, growing_methods, grows_on_node_type_list, can_grow_function, select_how_to_grow_function )
+trees_lib.register_tree = function( tree_name, mod_prefix, nodes, growing_methods, grows_on_node_type_list, can_grow_function, select_how_to_grow_function, interval, chance )
 	-- register tree trunk, wood, leaves and fruit (provided they are not defined yet)
 	local cid_list = trees_lib.register_tree_nodes_and_crafts( tree_name, mod_prefix, nodes );
 
@@ -495,11 +502,18 @@ trees_lib.register_tree = function( tree_name, mod_prefix, nodes, growing_method
 		new_tree_type_function( tree_name, mod_prefix, nodes );
 	end
 
+	-- set default values for the tree-growing abm if none are set
+	if( not( interval)) then
+		interval = 10;
+	end
+	if( not( chance )) then
+		chance = 1;
+	end
 	-- now add the abm that lets the tree grow
 	minetest.register_abm({
 		nodenames = { nodes.sapling.node_name },
-		interval = 10,
-		chance = 1,
+		interval = interval,
+		chance = chance,
 		action = trees_lib.tree_abm_called,
 	});
 end

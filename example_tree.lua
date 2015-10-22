@@ -194,6 +194,10 @@ trees_lib.register_tree( "example", "trees_lib",
 	-- no (additional) limits as to where the tree can grow (no can_grow_function)
 	nil,
 	-- the tree will grow in a diffrent way depending on the ground it grows on; see the function below for details
-	example_tree_select_how_to_grow
+	example_tree_select_how_to_grow,
+	-- the interval for the sapling-growing abm in seconds
+	10,
+	-- the chance of the abm actually firing and growing the sapling (the higher the smaller)
+	1
 );
 
