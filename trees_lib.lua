@@ -468,9 +468,12 @@ trees_lib.tree_abm_called = function( pos, node, active_object_count, active_obj
 	-- the tree may come with a more complex function that checks if it can grow there
 	if( not(force_grow) and sapling_data.can_grow and type( sapling_data.can_grow)=="function" ) then
 		-- the parameter ground_found is nil if the tree did not specify any demands for a particular ground
-		if( not( sapling_data.can_grow( pos, node, ground_found ))) then
-			-- trun into dry shrub
-			trees_lib.failed_to_grow( pos, node, ground_found );
+		local ret = sapling_data.can_grow( pos, node, ground_found );
+		if( ret < 1 ) then
+			-- trun into dry shrub if growing failed finally (and was not just delayed)
+			if( ret==0 ) then
+				trees_lib.failed_to_grow( pos, node, ground_found );
+			end
 			return;
 		end
 	end
@@ -609,7 +612,9 @@ trees_lib.register_tree = function( tree_name, nodes, growing_methods, grows_on_
 		-- are all the requirements met for growing at pos?
 		-- sapling will only grow if
 		--      growing.can_grow( pos, node, ground_found )
-		-- returns true
+		-- returns a value >0; if 0 is returned, the sapling will fail to grow
+		-- and be turned into dry shrub; if a value <0 is returned, nothing will
+		-- happen (the sapling can try again later on)
 		-- (usful for i.e. requiring water nearby, or other
 		-- more complex requirements)
 		can_grow      = can_grow_function,
@@ -637,7 +642,7 @@ trees_lib.register_tree = function( tree_name, nodes, growing_methods, grows_on_
 		interval = 10;
 	end
 	if( not( chance )) then
-		chance = 1;
+		chance = 50;
 	end
 	-- now add the abm that lets the tree grow
 	minetest.register_abm({
