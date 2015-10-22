@@ -182,7 +182,8 @@ end
 -- type is registered using trees_lib.register_tree(..)
 trees_lib.register_on_new_tree_type_function_list = {}
 
--- the function new_tree_type_function will be called once for each tree type
+-- the function new_tree_type_function will be called once for each tree type;
+-- use this for adding the 1 tree -> 4 wood craft receipe
 trees_lib.register_on_new_tree_type = function( new_tree_type_function )
 
 	-- call the function for all tree types that have been registered up
@@ -278,13 +279,13 @@ end
 -- nodes for the trees: trunk, planks, leaves, sapling and fruit
 -----------------------------------------------------------------------------
 -- (internal function)
--- * if nodes.wood.dont_add_craft_receipe is set, no craft receipe
---   for 1 tree -> 4 wood will be added
 -- * there can be up to 5 diffrent leaves types
 -- * Note: craft receipes for fuel (tree, wood, leaves) do not need to be
 --         added because default already contains general craft receipes
---         based on the respective groups
-trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, nodes )
+--         based on the respective groups.
+-- * Note: The craft receipe for 1 tree -> 4 wood can be done via
+--         trees_lib.register_on_new_tree_type
+trees_lib.register_tree_nodes = function( tree_name, mod_prefix, nodes )
 
 	-- gather all the relevant content ids
 	local cid = {};
@@ -387,18 +388,6 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 			tiles = { texture_prefix.."_fruit.png",
 				},
 		}, nodes.fruit, "fruit", sapling_node_name, cid );
-
-	-- we need to add the craft receipe for tree -> planks;
-	-- if this receipe is not desired, nodes.wood needs to contain a field dont_add_craft_receipe that is not nil
-	if( nodes.wood and not( nodes.wood.dont_add_craft_receipe)) then
-		minetest.register_craft({
-			-- the amount of wood given might be a global config variable
-			output = nodes.wood.node_name..' 4',
-				recipe = {
-					{ nodes.tree.node_name },
-				}
-			});
-	end
 
 	-- return the ids we've gathered
 	return cid;
@@ -586,7 +575,7 @@ trees_lib.register_tree = function( tree_name, nodes, growing_methods, grows_on_
 
 
 	-- register tree trunk, wood, leaves and fruit (provided they are not defined yet)
-	local cid_list = trees_lib.register_tree_nodes_and_crafts( tree_name, mod_prefix, nodes );
+	local cid_list = trees_lib.register_tree_nodes( tree_name, mod_prefix, nodes );
 
 	-- a sapling will be needed for growing the tree
 	if(   not( nodes.sapling )
