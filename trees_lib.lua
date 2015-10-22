@@ -31,6 +31,104 @@ trees_lib.after_place_leaves = function(pos, placer, itemstack, pointed_thing)
 	minetest.set_node(pos, node)
 end
 
+-- generalized function called after placing fruits
+trees_lib.after_place_fruit = function(pos, placer, itemstack, pointed_thing)
+	if placer:is_player() then
+		-- find out the node name (this function is for all fruits that do not override it)
+		local node = minetest.get_node( pos );
+		if( node and node.name) then
+			minetest.set_node(pos, {name =  node.name, param2 = 1})
+		end
+	end
+end
+
+
+-----------------------------------------------------------------------------
+-- the various node definitions that are common to all nodes of that type
+-- (unless overriden)
+-----------------------------------------------------------------------------
+trees_lib.node_def_tree = {
+		--description = "TREENAME Tree",
+		--tiles = nodes.tree.tiles,
+		paramtype2 = "facedir",
+		is_ground_content = false,
+		-- moretrees uses snappy=1 here as well
+		groups = {tree = 1, choppy = 2, oddly_breakable_by_hand = 1, flammable = 2},
+		sounds = trees_lib.sound_wood,
+		on_place = minetest.rotate_node
+	}
+
+trees_lib.node_def_wood = {
+		--description = "TREENAME Wood Planks",
+		--tiles = nodes.wood.tiles,
+		is_ground_content = false,
+		-- moretrees uses snappy=1 here
+		groups = {choppy = 2, oddly_breakable_by_hand = 2, flammable = 3, wood = 1},
+		sounds = trees_lib.sound_wood,
+	}
+
+trees_lib.node_def_leaves = {
+		--description = "TREENAME Leaves",
+		--tiles = nodes[k].tiles,
+		--special_tiles = nodes[k].special_tiles,
+
+		-- moretrees has some options for this
+		drawtype = "allfaces_optional",
+		waving = 1,
+		visual_scale = 1.3,
+		paramtype = "light",
+		is_ground_content = false,
+		-- moretrees sets moretrees_leaves=1, leafdecay = decay
+		groups = {snappy = 3, leafdecay = 3, flammable = 2, leaves = 1},
+		sounds = trees_lib.sound_leaves,
+		after_place_node = trees_lib.after_place_leaves,
+		-- the drop part of the node definition needs to be constructed
+		-- for each leaf individually
+	}
+
+
+trees_lib.node_def_fruit = {
+		--description = "TREENAME Fruit",
+		drawtype = "plantlike",
+		visual_scale = 1.0,
+		--tiles = nodes.fruit.tiles,
+		--inventory_image =  nodes.fruit.tiles[1],
+		paramtype = "light",
+		sunlight_propagates = true,
+		walkable = false,
+		is_ground_content = false,
+		selection_box = {
+			type = "fixed",
+			fixed = {-0.2, -0.5, -0.2, 0.2, 0, 0.2}
+		},
+		groups = {fleshy = 3, dig_immediate = 3, flammable = 2,
+			leafdecay = 3, leafdecay_drop = 1},
+		sounds = trees_lib.sound_leaves,
+		-- store that this fruit has been placed manually
+		after_place_node = trees_lib.after_place_fruit,
+		-- a fruit that wants to be eatable ought to supply the following line in
+		-- its fruit definition:
+		--on_use = minetest.item_eat(food_points),
+	}
+
+trees_lib.node_def_sapling = {
+		--description = "TREENAME sapling",
+		drawtype = "plantlike",
+		visual_scale = 1.0,
+		--tiles = nodes.sapling.tiles,
+		--inventory_image = nodes.sapling.tiles[1],
+		--wield_image = nodes.sapling.tiles[1],
+		paramtype = "light",
+		sunlight_propagates = true,
+		walkable = false,
+		selection_box = {
+			type = "fixed",
+			fixed = {-0.3, -0.5, -0.3, 0.3, 0.35, 0.3}
+		},
+		groups = {snappy = 2, dig_immediate = 3, flammable = 2,
+			attached_node = 1, sapling = 1},
+		sounds = trees_lib.sound_leaves,
+	}
 
 -----------------------------------------------------------------------------
 -- internal functions for handling identification of nodes (i.e. what is a
@@ -102,6 +200,79 @@ end
 
 
 -----------------------------------------------------------------------------
+-- mix basic node definition (see below), default constructed values (which
+-- are derived from modname and treename) as fallback and user (=user of the
+-- trees_lib) specified node defintion up into one node definition and
+-- register the node (provided it does not exist yet)
+-----------------------------------------------------------------------------
+trees_lib.register_one_node = function( def_common, def_default, def_user, node_type, sapling_node_name, cid )
+	if( not( def_user)) then
+		def_user = {};
+	end
+	-- find out which node we are supposed to register
+	local node_name = def_user.node_name;
+	if( not( node_name )) then
+		node_name = def_default.node_name;
+	end
+	-- if the node is alrady registered, then abort
+	if( minetest.registered_nodes[ node_name ]) then
+		-- store the content id of this node for this type
+		cid[ node_type ] = minetest.get_content_id( node_name );
+		return;
+	end
+
+	-- create the new node definition
+	local node_def = {};
+	-- first, add all entries from def_common
+	for k,v in pairs( def_common ) do
+		node_def[ k ] = v;
+	end
+	-- then try the default values
+	for k,v in pairs( def_default) do
+		node_def[ k ] = v;
+	end
+	-- last, apply all user supplied node definitions and thus overwrite
+	-- common and default definitions
+	for k,v in pairs( def_user ) do
+		node_def[ k ] = v;
+	end
+
+	-- set inventory_image and wield_image for plantlike nodes
+	if(    node_def.drawtype
+	   and node_def.drawtype=="plantlike"
+	   and not( node_def.inventory_image )) then
+		node_def.inventory_image = node_def.tiles[1];
+		node_def.wield_image = node_def.tiles[1];
+	end
+
+	-- the node name does not belong into the node definition
+	node_def.node_name = nil;
+
+	-- actually register the new node
+	minetest.register_node( node_name, node_def );
+
+
+	-- make sure the node name gets saved
+	def_user.node_name = node_name;
+
+	-- can this node (in theory) be overwritten by other trees?
+	local allow_overwrite = nil;
+	if( node_type=="leaf" or node_type=="fruit" or node_type=="sapling") then
+		allow_overwrite = 1;
+	end
+	-- enter all these node names into a table for fast lookup
+	-- (without having to resort to checking the group)
+	-- the trees_lib.is_sapling field will later on contain more helpful information;
+	-- the sapling needs to be the first node registered for this to work reliably
+	trees_lib.build_lookup_table( node_name, "is_"..node_type, sapling_node_name, allow_overwrite );
+
+	-- store the content id of the newly registered node
+	cid[ node_type ] = minetest.get_content_id( node_name );
+end
+
+
+
+-----------------------------------------------------------------------------
 -- nodes for the trees: trunk, planks, leaves, sapling and fruit
 -----------------------------------------------------------------------------
 -- (internal function)
@@ -113,8 +284,139 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 	-- gather all the relevant content ids
 	local cid = {};
 
+	local tree_name_upcase = tree_name:gsub("^%l", string.upper);
+	local texture_prefix = mod_prefix.."_"..tree_name;
+
+	if( not( nodes )) then
+		nodes = {};
+	end
+
+	-- the sapling node name will act as a reference in the lookup table later on;
+	-- therefore, we need to determine how the node will be called early enough
+	local sapling_node_name = mod_prefix..':'..tree_name..'_sapling';
+	if( nodes.sapling and nodes.sapling.node_name ) then
+		sapling_node_name = nodes.sapling.node_name;
+	end
+
+	-- register the sapling
+	trees_lib.register_one_node( trees_lib.node_def_sapling,
+		{
+			node_name = sapling_node_name,
+			description = tree_name_upcase.." Sapling",
+			tiles = { texture_prefix.."_sapling.png",
+				},
+		}, nodes.sapling, "sapling", sapling_node_name, cid );
+
+
 	-- register the tree trunk
-	if( nodes and nodes.tree and nodes.tree.node_name and not( minetest.registered_nodes[ nodes.tree.node_name ])) then
+	trees_lib.register_one_node( trees_lib.node_def_tree,
+		{
+			node_name = mod_prefix..':'..tree_name..'_tree',
+			description = tree_name_upcase.." Tree",
+			tiles = { texture_prefix.."_tree_top.png",
+				  texture_prefix.."_tree_top.png",
+				  texture_prefix.."_tree.png",
+				},
+		}, nodes.tree, "tree", sapling_node_name, cid );
+
+	-- register the wood that belongs to the tree
+	trees_lib.register_one_node( trees_lib.node_def_wood,
+		{
+			node_name = mod_prefix..':'..tree_name..'_wood',
+			description = tree_name_upcase.." Planks",
+			tiles = { texture_prefix.."_wood.png",
+				},
+		}, nodes.wood, "wood", sapling_node_name, cid );
+
+
+	-- default drop rate for the sapling (1/20)
+	if( not( nodes.sapling.rarity )) then
+		nodes.sapling.rarity = 20;
+	end
+
+	-- register the leaves; some trees may have more than one type of leaves (i.e. moretrees jungletrees)
+	local leaves_id = {'leaves','leaves2','leaves3','leaves4','leaves5'};
+	for _,k in ipairs( leaves_id ) do
+		-- not all leaf types need to exist; we just expect at least one type of leaves to be there
+		if( nodes[ k ] or k=='leaves') then
+			-- we need to determine the node name now as leaves tend to drop themshelves sometimes
+			local leaves_node_name = nodes[ k ].node_name;
+			if( not( leaves_node_name )) then
+				leaves_node_name = mod_prefix..':'..tree_name..'_'..k;
+			end
+			trees_lib.register_one_node( trees_lib.node_def_leaves,
+			{
+				node_name = leaves_node_name,
+				description = tree_name_upcase.." Leaves",
+				tiles = { texture_prefix.."_"..k..".png",
+					},
+--				special_tiles = { texture_prefix.."_"..k.."_simple.png", },
+				drop = {
+					max_items = 1,
+					items = {
+						{
+							-- player will get sapling with 1/20 chance
+							items = { nodes.sapling.node_name},
+							rarity = nodes.sapling.rarity,
+						},
+						{
+							-- player will get leaves only if he get no saplings,
+							-- this is because max_items is 1
+							items = { leaves_node_name},
+						}
+					}
+				},
+			}, nodes[ k ], "leaf", sapling_node_name, cid);
+
+			-- also store the content ids of all leaf types
+			cid[ k ] = cid[ "leaf" ];
+		end
+	end
+
+	-- register the fruit
+	trees_lib.register_one_node( trees_lib.node_def_fruit,
+		{
+			node_name = mod_prefix..':'..tree_name..'_fruit',
+			description = tree_name_upcase.." Fruit",
+			tiles = { texture_prefix.."_fruit.png",
+				},
+		}, nodes.fruit, "fruit", sapling_node_name, cid );
+
+	-- we need to add the craft receipe for tree -> planks;
+	-- if this receipe is not desired, nodes.wood needs to contain a field dont_add_craft_receipe that is not nil
+	if( nodes.wood and not( nodes.wood.dont_add_craft_receipe)) then
+		minetest.register_craft({
+			-- the amount of wood given might be a global config variable
+			output = nodes.wood.node_name..' 4',
+				recipe = {
+					{ nodes.tree.node_name },
+				}
+			});
+	end
+
+	-- TODO: further craft receipes may be needed (i.e. for fuel)
+
+	-- return the ids we've gathered
+	return cid;
+end
+
+
+
+
+-- TODO: this is the old verson of the function
+trees_lib.register_tree_nodes_and_crafts_OLD = function( tree_name, mod_prefix, nodes )
+	-- register the tree trunk
+	if( not( nodes.tree)) then
+		nodes.tree = {};
+	end
+	if( not( nodes.tree.node_name )) then
+		nodes.tree.node_name = mod_prefix..':'..tree_name..'_tree';
+	end
+	if( not( nodes.tree.description )) then
+		nodes.tree.description = tree_name_upcase..' Tree';
+	end
+	-- (but only register the tree trunk if the node has not been registered yet)
+	if( not( minetest.registered_nodes[ nodes.tree.node_name ])) then
 		minetest.register_node( nodes.tree.node_name, {
 			description = nodes.tree.description,
 			tiles = nodes.tree.tiles,
@@ -125,6 +427,7 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 			sounds = trees_lib.sound_wood,
 			on_place = minetest.rotate_node
 		})
+
 
 		-- we need to add the craft receipe for tree -> planks;
 		-- if this receipe is not desired, nodes.wood needs to contain a field dont_add_craft_receipe that is not nil
@@ -144,7 +447,16 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 	end
 
 	-- register the wooden planks
-	if( nodes and nodes.wood and nodes.wood.node_name and not( minetest.registered_nodes[ nodes.wood.node_name ])) then
+	if( not( nodes.wood)) then
+		nodes.wood = {};
+	end
+	if( not( nodes.wood.node_name )) then
+		nodes.wood.node_name = mod_prefix..':'..tree_name..'_wood';
+	end
+	if( not( nodes.wood.description )) then
+		nodes.wood.description = tree_name_upcase..' Wood Planks';
+	end
+	if( not( minetest.registered_nodes[ nodes.wood.node_name ])) then
 		minetest.register_node( nodes.wood.node_name, {
 			description = nodes.wood.description,
 			tiles = nodes.wood.tiles,
@@ -156,7 +468,7 @@ trees_lib.register_tree_nodes_and_crafts = function( tree_name, mod_prefix, node
 		-- we need to add the craft receipe for planks -> sticks
 		-- (but since there is a default craft receipe for group:wood, that ought to be cover it)
 	end
-	if( nodes and nodes.wood and nodes.wood.node_name and minetest.registered_nodes[ nodes.wood.node_name ]) then
+	if( minetest.registered_nodes[ nodes.wood.node_name ]) then
 		cid[ 'wood' ] = minetest.get_content_id( nodes.wood.node_name );
 		trees_lib.build_lookup_table( nodes.wood.node_name,       "is_wood",    nodes.sapling.node_name, nil );
 	end
