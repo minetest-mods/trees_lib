@@ -13,7 +13,7 @@ local default_craft_wood_from_tree = function( tree_name, mod_prefix, nodes )
 
 	minetest.register_craft({
 		-- the amount of wood given might be a global config variable
-		output = nodes.wood.node_name..' 2',
+		output = nodes.wood.node_name..' 5',
 		recipe = {
 			{ nodes.tree.node_name },
 		}
