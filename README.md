@@ -1,24 +1,36 @@
 Trees are common. Yet they are all registered manually so far. And plugging
 in to their growing mechanism with mods is difficult.
 
-List of files:
-init.lua                          Loads all the needed other files (including examples)
-trees_lib.lua                     The actual trees_lib.
-trees_lib_growing_functions.lua   Some tree growing functions as examples.
-example_tree.lua                  A complex example for one tree.
-trees.lua                         Replacement for default/trees.lua
+Author: Sokomine
+Contact: see https://github.com/Sokomine
 
-Not covered in trees_lib:
-* fuel receipes for the tree nodes
-* crafting of tree into wood
+License: LGPL (same as minetest_game) for the trees_lib from 11.04.2017 onward
+         (trees_lib_examples may contain code from other mods)
+
+List of files:
+	init.lua                          The actual trees_lib.
+
+If you want to see some examples, take a look at
+	https://github.com/Sokomine/trees_lib_examples
+which contains the following additional files:
+	init.lua                          Just runs dofile on the other files.
+	trees_lib_growing_functions.lua   Some tree growing functions as examples.
+	example_tree.lua                  A complex example for one tree.
+	trees.lua                         Replacement for default/trees.lua
+
+Not covered by trees_lib:
+* fuel receipes for the tree, wood, leaves nodes
+* crafting of tree into wood (use trees_lib.register_on_new_tree_type for those)
 * leafdecay
 
 If you want to test trees_lib with the default mod, do the following:
 
 1. (optional) remove/comment out all receipes for tree trunk -> 4 wood in default/crafting.lua
 2. (optional) remove/comment out all tree, wood, leaves and fruit nodes in default/nodes.lua
-3. (optional) rename the file default/trees.lua
-4. copy trees_lib/trees.lua to default/trees.lua
+   If doing so, also remove/comment out all calls of default.register_leafdecay plus all
+   leafdecay-related functions in default/functions.lua.
+3. (optional) rename the file default/trees.lua in order to create a backup.
+4. copy trees_lib_examples/trees.lua to default/trees.lua
 
 If you want to add a new tree using trees_lib, do the following:
 
@@ -34,7 +46,7 @@ If you want to add a new tree using trees_lib, do the following:
 4. Make your mod depend on trees_lib by adding a line trees_lib to
      MODNAME/depends.txt
 5. Actually register the tree somewhere in your mod:
-     trees_lib.register_tree( TREENAME )
+     trees_lib.register_tree( TREENAME, minetest.get_current_modname() )
    All other parameters to trees_lib.register_tree are optional.
 
 
